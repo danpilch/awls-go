@@ -1,9 +1,9 @@
 package main
 
 import (
+	"os"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
-	"os"
 
 	"github.com/alecthomas/kong"
 	"github.com/aws/aws-sdk-go/aws"
@@ -34,7 +34,7 @@ func main() {
 			&ec2.Filter{
 				Name: aws.String("tag:Name"),
 				Values: []*string{
-					aws.String(cli.Search + "*"),
+					aws.String("*" + cli.Search + "*"),
 				},
 			},
 		},
