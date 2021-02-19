@@ -85,10 +85,13 @@ func main() {
 	// Create new EC2 client
 	svc := ec2.New(sess)
 
+	// Generate an EC2 search filter
 	filter := buildSearchFilter(cli.FilterType)
 
+	// find relevant resources from aws api
 	result, err := svc.DescribeInstances(filter)
 
+	// check results and error if something went wrong
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -103,11 +106,13 @@ func main() {
 		return
 	}
 
+	// return if no results found
 	if len(result.Reservations) < 1 {
 		fmt.Println("no matching instances found")
 		return
 	}
 
+	// output a list of ips 
 	if cli.IpOnly {
 		fmt.Println(strings.Join(buildPrivateIpData(result)[:], cli.Delimiter))
 	} else {
