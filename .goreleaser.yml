@@ -4,4 +4,7 @@ brews:
     name: awls
     tap:
       owner: danpilch
-      name: awls
+      name: homebrew-awls
+    folder: Formula
+    description: "Lookup EC2 information in the terminal"
+    license: "MIT"
