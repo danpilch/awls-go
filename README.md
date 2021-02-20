@@ -1,6 +1,11 @@
 # awls
 Lookup EC2 information in the terminal
 
+## Installation
+
+OSX:
+`brew tap danpilch/awls && brew install awls`
+
 ## Usage
 
 ```bash
