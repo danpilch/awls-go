@@ -5,7 +5,7 @@ brews:
     tap:
       owner: danpilch
       name: homebrew-awls
-      token: "{{ .secret.HOMEBREW_TAP_GITHUB_TOKEN }}"
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     description: "Lookup EC2 information in the terminal"
     license: "MIT"
