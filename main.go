@@ -112,7 +112,7 @@ func main() {
 		return
 	}
 
-	// output a list of ips 
+	// output a list of ips
 	if cli.IpOnly {
 		fmt.Println(strings.Join(buildPrivateIpData(result)[:], cli.Delimiter))
 	} else {
