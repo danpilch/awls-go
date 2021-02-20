@@ -1,0 +1,7 @@
+# .goreleaser.yml
+brews:
+  - 
+    name: awls
+    tap:
+      owner: danpilch
+      name: awls-tap
