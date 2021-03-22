@@ -13,11 +13,15 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+var Version = "development"
+
 var cli struct {
 	Search     string `required arg help:"EC2 Instance Name search term"`
 	IpOnly     bool   `short:"i" help:"Output only Private IPs"`
+	NewLine    bool   `short:"n" help:"Output each IP on a new line" default:"false"`
 	Delimiter  string `short:"d" help:"IP delimiter" default:" "`
 	FilterType string `short:"f" help:"EC2 Filter Type (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html)" default:"tag:Name"`
+	Version    bool   `short:"v" help:"Print version"`
 }
 
 func buildSearchFilter(filterName string) *ec2.DescribeInstancesInput {
@@ -77,6 +81,12 @@ func main() {
 	// Parse cli args
 	kong.Parse(&cli)
 
+	// Version check
+	if cli.Version {
+		fmt.Println(Version)
+		return
+	}
+
 	// Load session from shared config
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -114,7 +124,13 @@ func main() {
 
 	// output a list of ips
 	if cli.IpOnly {
-		fmt.Println(strings.Join(buildPrivateIpData(result)[:], cli.Delimiter))
+		if cli.NewLine {
+			for _, ip := range buildPrivateIpData(result) {
+				fmt.Println(ip)
+			}
+		} else {
+			fmt.Println(strings.Join(buildPrivateIpData(result)[:], cli.Delimiter))
+		}
 	} else {
 		tableData, tableHeaders := buildTableData(result)
 		table := tablewriter.NewWriter(os.Stdout)
