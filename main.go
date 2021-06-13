@@ -43,7 +43,9 @@ func buildPrivateIpData(result *ec2.DescribeInstancesOutput) []string {
 	var privateIps = []string{}
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
-			privateIps = append(privateIps, string(*instance.PrivateIpAddress))
+			if *instance.PrivateIpAddress != nil {
+				privateIps = append(privateIps, string(*instance.PrivateIpAddress))
+			}
 		}
 	}
 	return privateIps
