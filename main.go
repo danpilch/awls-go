@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -27,11 +28,11 @@ var cli struct {
 func buildSearchFilter(filterName string) *ec2.DescribeInstancesInput {
 	// Define search params - only basic pattern matching supported right now
 	filter := &ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
-			&ec2.Filter{
+		Filters: []types.Filter{
+			{
 				Name: aws.String(filterName),
-				Values: []*string{
-					aws.String("*" + cli.Search + "*"),
+				Values: []string{
+					"*" + cli.Search + "*",
 				},
 			},
 		},
@@ -42,9 +43,9 @@ func buildSearchFilter(filterName string) *ec2.DescribeInstancesInput {
 func buildPrivateIpData(result *ec2.DescribeInstancesOutput) []string {
 	var privateIps = []string{}
 	for _, reservation := range result.Reservations {
-		for _, instance := range reservation.Instances {
-			if *instance.PrivateIpAddress != nil {
-				privateIps = append(privateIps, string(*instance.PrivateIpAddress))
+		for _, i := range reservation.Instances {
+			if i.PrivateIpAddress != nil {
+				privateIps = append(privateIps, string(*i.PrivateIpAddress))
 			}
 		}
 	}
@@ -56,9 +57,9 @@ func buildTableData(result *ec2.DescribeInstancesOutput) ([][]string, []string) 
 	var tblHeaders = []string{"Name", "PrivateIp", "State", "AZ", "InstanceId", "InstanceType", "LaunchTime"}
 
 	for _, reservation := range result.Reservations {
-		for _, instance := range reservation.Instances {
+		for _, i := range reservation.Instances {
 			var nameTag string
-			for _, t := range instance.Tags {
+			for _, t := range i.Tags {
 				if *t.Key == "Name" {
 					nameTag = *t.Value
 					break
@@ -66,13 +67,13 @@ func buildTableData(result *ec2.DescribeInstancesOutput) ([][]string, []string) 
 			}
 
 			tbl = append(tbl, []string{
-				string(nameTag),
-				string(*instance.PrivateIpAddress),
-				string(*instance.State.Name),
-				string(*instance.Placement.AvailabilityZone),
-				string(*instance.InstanceId),
-				string(*instance.InstanceType),
-				string(instance.LaunchTime.Format("2006-01-02 15:04:05")),
+				nameTag,
+				*i.PrivateIpAddress,
+				string(i.State.Name),
+				*i.Placement.AvailabilityZone,
+				*i.InstanceId,
+				string(i.InstanceType),
+				string(i.LaunchTime.Format("2006-01-02 15:04:05")),
 			})
 		}
 	}
@@ -89,34 +90,20 @@ func main() {
 		return
 	}
 
-	// Load session from shared config
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
+	// Create config
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		panic(err)
+	}
 
-	// Create new EC2 client
-	svc := ec2.New(sess)
+	// Create client
+	ec2Client := ec2.NewFromConfig(cfg)
 
 	// Generate an EC2 search filter
 	filter := buildSearchFilter(cli.FilterType)
 
 	// find relevant resources from aws api
-	result, err := svc.DescribeInstances(filter)
-
-	// check results and error if something went wrong
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				fmt.Println(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
-		}
-		return
-	}
+	result, err := ec2Client.DescribeInstances(context.TODO(), filter)
 
 	// return if no results found
 	if len(result.Reservations) < 1 {
